@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import io.playfinity.sdk.bluetooth.BluetoothDataRaw
 import kotlinx.android.synthetic.main.sensor_raw_data_list_view.view.*
+import register.before.production.playfinity.raw.R
 import java.util.*
 
 data class RawDataListItem(

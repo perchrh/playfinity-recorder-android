@@ -18,31 +18,32 @@ import android.support.transition.AutoTransition
 import android.support.transition.TransitionManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.DividerItemDecoration
-import android.support.v7.widget.LinearLayoutManager
 import android.view.View
+import io.playfinity.sdk.PFIBallEvent
 import io.playfinity.sdk.PlayfinitySDK
-import io.playfinity.sdk.bluetooth.BluetoothDataRaw
 import io.playfinity.sdk.bluetooth.PFIBluetoothManager
 import io.playfinity.sdk.callbacks.DiscoverSensorListener
 import io.playfinity.sdk.device.Sensor
-import io.playfinity.sdk.device.SensorRawDataSubscriber
+import io.playfinity.sdk.device.SensorEventsSubscriber
 import io.playfinity.sdk.errors.PlayfinityThrowable
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.sensor_raw_data_list_view.*
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.*
+import register.before.production.BellApiManager
+import register.before.production.network.NetworkClient
+import register.before.production.playfinity.raw.App
+import register.before.production.playfinity.raw.AppExecutors
+import register.before.production.playfinity.raw.R
 import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity(),
         DiscoverSensorListener,
-        SensorRawDataSubscriber {
+        SensorEventsSubscriber {
+
+    private val apiServices by lazy { NetworkClient.getApi("https://testapps001.playfinity.io/") }
+    private val myApiManager: BellApiManager by lazy {  BellApiManager(apiServices) }
 
     private var playfinitySDK: PlayfinitySDK? = null
     private val pfiBluetoothManager: PFIBluetoothManager?
@@ -50,11 +51,9 @@ class MainActivity : AppCompatActivity(),
 
     private var sensor: Sensor? = null
     private var isConnectedToSensor = false
-    private val adapter = RawDataListAdapter()
 
     private val handler = Handler()
-    private val updateListTask = Runnable { updateListTaskJob() }
-    private val rawDataItems = mutableListOf<RawDataListItem>()
+    private val updateListTask = Runnable { }
 
     private var counter: Int = 0
         get() {
@@ -117,15 +116,15 @@ class MainActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
 
-        if (canStartBleScanner()) {
-            onBleReady()
-        }
+        //if (canStartBleScanner()) {
+        //    onBleReady()
+        //}
     }
 
     override fun onPause() {
         super.onPause()
-        unregisterBallScanner()
-        handler.removeCallbacks(updateListTask)
+        //unregisterBallScanner()
+        //handler.removeCallbacks(updateListTask)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -139,9 +138,9 @@ class MainActivity : AppCompatActivity(),
                 record_btn.text = "Record"
                 send_btn.isEnabled = false
                 progress_bar.visibility = View.GONE
-                clearRecords()
 
-                sensor?.subscribeToRawData(this)
+                sensor?.subscribeToEvents(this)
+
             }
         }
     }
@@ -184,26 +183,6 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    override fun onSensorRawData(rawData: BluetoothDataRaw) {
-        if (!collectRecords) {
-            return
-        }
-
-        executors.workerThread().execute {
-            rawDataItems.add(RawDataListItem(counter, rawData))
-        }
-    }
-
-    private fun updateListTaskJob(postNext: Boolean = true) {
-        adapter.submit(rawDataItems)
-        (raw_data_list.layoutManager as LinearLayoutManager).scrollToPosition(adapter.itemCount - 1)
-        rawDataItems.clear()
-
-        if (postNext) {
-            handler.postDelayed(updateListTask, updateListInterval)
-        }
-    }
-
     private fun setupUi() {
         fab.setOnClickListener {
             val foundSensor = sensor
@@ -222,18 +201,12 @@ class MainActivity : AppCompatActivity(),
 
             if (isConnectedToSensor) {
                 status_tv.text = "Subscribed to Raw data"
-                foundSensor.subscribeToRawData(this)
+                sensor?.subscribeToEvents(this)
             } else {
+                sensor?.unSubscribeEvents(this)
                 status_tv.text = "Unsubscribed Raw data"
-                foundSensor.unSubscribeRawData(this)
-                updateListTaskJob(false)
             }
         }
-
-        val dividerItemDecoration = DividerItemDecoration(this, LinearLayoutManager.VERTICAL)
-
-        raw_data_list.addItemDecoration(dividerItemDecoration)
-        raw_data_list.adapter = adapter
 
         handler.postDelayed(updateListTask, updateListInterval)
 
@@ -251,7 +224,6 @@ class MainActivity : AppCompatActivity(),
 
         record_btn.setOnClickListener {
             record_btn.text = "Clear"
-            clearRecords()
             send_btn.isEnabled = true
             list_header_group.visibility = View.VISIBLE
         }
@@ -264,91 +236,10 @@ class MainActivity : AppCompatActivity(),
             fab.isEnabled = false
 
             progress_bar.visibility = View.VISIBLE
-            generateLogFile()
+
         }
 
         list_header_group.visibility = View.GONE
-    }
-
-    private fun generateLogFile() {
-        try {
-            val rawDataItems = adapter.getItems()
-            val header = RawDataListItem(0)
-
-            val records = mutableListOf<RawDataListItem>()
-            records.add(header)
-            records.addAll(rawDataItems)
-            val logBuilder = createLogBuilder(records)
-            val filecontents = logBuilder.toString().replace(".", ",")
-
-            val imagePath = File(cacheDir, "files")
-            imagePath.mkdirs()
-            val file = File(imagePath, "logs.csv")
-            val writer = FileWriter(file)
-            writer.append(filecontents)
-            writer.flush()
-            writer.close()
-
-            val logsURI = FileProvider.getUriForFile(this, "${applicationContext.packageName}.fileprovider", file)
-            shareLogs(logsURI)
-        } catch (e: IOException) {
-            //ignore
-            fab.isEnabled = true
-            record_btn.isEnabled = true
-            record_btn.text = "Record"
-            send_btn.isEnabled = false
-            progress_bar.visibility = View.GONE
-            clearRecords()
-        }
-    }
-
-    private fun createLogBuilder(records: List<RawDataListItem>): StringBuilder {
-        val logBuilder = StringBuilder()
-
-        records.forEach {
-            logBuilder
-                    .append(it.ax)
-                    .append(';')
-                    .append(it.ay)
-                    .append(';')
-                    .append(it.az)
-                    .append(';')
-                    .append(it.gx)
-                    .append(';')
-                    .append(it.gy)
-                    .append(';')
-                    .append(it.gz)
-                    .append(';')
-                    .append(it.baro)
-                    .append(';')
-                    .append(it.sensortime)
-                    .append(';')
-                    .append('\n')
-        }
-
-        return logBuilder
-    }
-
-    private fun shareLogs(logsURI: Uri) {
-        val shareIntent = Intent()
-        shareIntent.action = Intent.ACTION_SEND
-        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        shareIntent.putExtra(Intent.EXTRA_STREAM, logsURI)
-        shareIntent.type = "text/*"
-        shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Playfinity Raw Logs.csv")
-        val message = "Logs from: ${Date().format("dd-MM-yyyy hh:mm:ss")}\n${sensor_name_tv.text}\n${sensor_firmware_tv.text}"
-        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, message)
-
-        startActivityForResult(Intent.createChooser(shareIntent, "Send to"), SHARE_REQUEST)
-    }
-
-    private fun clearRecords() {
-        handler.removeCallbacks(updateListTask)
-        rawDataItems.clear()
-        adapter.clear()
-        counter = 0
-
-        handler.postDelayed(updateListTask, updateListInterval)
     }
 
     private fun handelSensorDiscovery() {
@@ -367,7 +258,7 @@ class MainActivity : AppCompatActivity(),
      * Stops ball discover event
      */
     private fun unregisterBallScanner() {
-        sensor?.unSubscribeRawData(this)
+        sensor?.unSubscribeEvents(this)
         pfiBluetoothManager?.run {
             removeSensorDiscoverListener(this@MainActivity)
             stopScanner()
@@ -448,11 +339,26 @@ class MainActivity : AppCompatActivity(),
 
         executors.workerThread().execute {
             pfiBluetoothManager?.run {
-                status_tv.text = "Looking for Sensors nearby"
+
+                runOnUiThread {
+                    status_tv.text = "Looking for Sensors nearby"
+                }
                 addSensorDiscoverListener(this@MainActivity)
                 startScanner(false)
             }
         }
+    }
+
+    override fun onSensorEvent(event: PFIBallEvent) {
+        counter++
+        status_tv.text = "Event: " + event.eventType + " " + counter
+
+        if (myApiManager == null) {
+            println("myApiManager is null")
+        } else {
+            println("myApiManager is ready")
+        }
+        myApiManager.chime(event.sensorId, "A89191CBBBAA")
     }
 
     private fun unregisterBleReceiver() = try {
