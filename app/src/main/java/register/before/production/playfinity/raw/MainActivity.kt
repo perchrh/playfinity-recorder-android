@@ -9,10 +9,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.provider.Settings
+import android.support.annotation.RawRes
 import android.support.design.widget.Snackbar
 import android.support.transition.AutoTransition
 import android.support.transition.TransitionManager
@@ -21,20 +23,20 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.view.View
-import io.playfinity.sdk.PFIBallEvent
 import io.playfinity.sdk.PlayfinitySDK
+import io.playfinity.sdk.SensorEvent
 import io.playfinity.sdk.bluetooth.PFIBluetoothManager
 import io.playfinity.sdk.callbacks.DiscoverSensorListener
 import io.playfinity.sdk.device.Sensor
 import io.playfinity.sdk.device.SensorEventsSubscriber
 import io.playfinity.sdk.errors.PlayfinityThrowable
+import io.playfinity.sdk.sound.PlayfinitySoundSettings
+import io.playfinity.sdk.sound.PlayfinitySoundVolume
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.sensor_raw_data_list_view.*
 import register.before.production.BellApiManager
 import register.before.production.network.NetworkClient
-import register.before.production.playfinity.raw.App
-import register.before.production.playfinity.raw.AppExecutors
-import register.before.production.playfinity.raw.R
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 
@@ -116,9 +118,9 @@ class MainActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
 
-        //if (canStartBleScanner()) {
-        //    onBleReady()
-        //}
+        if (canStartBleScanner()) {
+            onBleReady()
+        }
     }
 
     override fun onPause() {
@@ -337,7 +339,7 @@ class MainActivity : AppCompatActivity(),
 
         unregisterBleReceiver()
 
-        executors.workerThread().execute {
+        executors.mainThread().execute {
             pfiBluetoothManager?.run {
 
                 runOnUiThread {
@@ -349,7 +351,21 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onSensorEvent(event: PFIBallEvent) {
+    private val dingDongSound = createSoundSettings(R.raw.dingdong1, PlayfinitySoundVolume.high())
+    protected fun createSoundSettings(@RawRes soundId: Int,
+                                      volume: PlayfinitySoundVolume,
+                                      queuedPlay: Boolean = false,
+                                      looped: Boolean = false,
+                                      willBlockPlaybackUntilFinished: Boolean = false) =
+            PlayfinitySoundSettings(
+                    UUID.randomUUID().toString(),
+                    Uri.parse("android.resource://$packageName/$soundId"),
+                    soundId,
+                    volume = volume,
+                    queuedPlay = queuedPlay,
+                    looped = looped,
+                    willBlockPlaybackUntilFinished = willBlockPlaybackUntilFinished)
+    override fun onSensorEvent(event: SensorEvent) {
         counter++
         status_tv.text = "Event: " + event.eventType + " " + counter
 
@@ -358,7 +374,10 @@ class MainActivity : AppCompatActivity(),
         } else {
             println("myApiManager is ready")
         }
+        var mediaPlayer: MediaPlayer? = MediaPlayer.create(this, R.raw.dingdong1)
+        mediaPlayer?.start()
         myApiManager.chime(event.sensorId, "A89191CBBBAA")
+
     }
 
     private fun unregisterBleReceiver() = try {
