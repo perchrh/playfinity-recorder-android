@@ -25,6 +25,7 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import io.playfinity.sdk.PlayfinitySDK
 import io.playfinity.sdk.SensorEvent
+import io.playfinity.sdk.SensorEventType
 import io.playfinity.sdk.bluetooth.PFIBluetoothManager
 import io.playfinity.sdk.callbacks.DiscoverSensorListener
 import io.playfinity.sdk.device.Sensor
@@ -136,9 +137,6 @@ class MainActivity : AppCompatActivity(),
             SHARE_REQUEST -> {
                 collectRecords = true
                 fab.isEnabled = true
-                record_btn.isEnabled = true
-                record_btn.text = "Record"
-                send_btn.isEnabled = false
                 progress_bar.visibility = View.GONE
 
                 sensor?.subscribeToEvents(this)
@@ -169,7 +167,7 @@ class MainActivity : AppCompatActivity(),
     override fun onSensorDiscovered(sensor: Sensor) {
         pfiBluetoothManager?.removeSensorDiscoverListener(this)
         TransitionManager.beginDelayedTransition(root, AutoTransition().apply { duration = 200 })
-        status_tv.text = "Sensor Found!"
+        status_tv.text = "Door Bell Found! Press red connect button to pair."
         this.sensor = sensor
         sensor_header_layout.visibility = View.VISIBLE
         separator_1.visibility = View.VISIBLE
@@ -177,7 +175,6 @@ class MainActivity : AppCompatActivity(),
         sensor_firmware_tv.text = "Firmware: %s".format(sensor.firmwareVersion)
         counter = 0
 
-        raw_data_list.visibility = View.VISIBLE
         fab.show()
     }
 
@@ -196,50 +193,18 @@ class MainActivity : AppCompatActivity(),
             isConnectedToSensor = !isConnectedToSensor
 
             fab.setImageResource(if (isConnectedToSensor) R.drawable.ic_bluetooth_connected_white_24dp else R.drawable.ic_bluetooth_disabled_white_24dp)
-            record_btn.isEnabled = isConnectedToSensor
-            record_btn.text = "Record"
-            send_btn.isEnabled = false
             list_header_group.visibility = View.GONE
 
             if (isConnectedToSensor) {
-                status_tv.text = "Subscribed to Raw data"
+                status_tv.text = "Door Bell is ready"
                 sensor?.subscribeToEvents(this)
             } else {
                 sensor?.unSubscribeEvents(this)
-                status_tv.text = "Unsubscribed Raw data"
+                status_tv.text = "Door Bell Found! Press red connect button to pair."
             }
         }
 
         handler.postDelayed(updateListTask, updateListInterval)
-
-        val header = RawDataListItem(0)
-        ax.text = header.ax
-        ay.text = header.ay
-        az.text = header.az
-
-        gx.text = header.gx
-        gy.text = header.gy
-        gz.text = header.gz
-
-        baro.text = header.baro
-        time.text = header.sensortime
-
-        record_btn.setOnClickListener {
-            record_btn.text = "Clear"
-            send_btn.isEnabled = true
-            list_header_group.visibility = View.VISIBLE
-        }
-
-        send_btn.setOnClickListener {
-            //generate .txt from records
-            collectRecords = false
-            record_btn.isEnabled = false
-            send_btn.isEnabled = false
-            fab.isEnabled = false
-
-            progress_bar.visibility = View.VISIBLE
-
-        }
 
         list_header_group.visibility = View.GONE
     }
@@ -343,7 +308,7 @@ class MainActivity : AppCompatActivity(),
             pfiBluetoothManager?.run {
 
                 runOnUiThread {
-                    status_tv.text = "Looking for Sensors nearby"
+                    status_tv.text = "Press Door Bell to wake it up"
                 }
                 addSensorDiscoverListener(this@MainActivity)
                 startScanner(false)
@@ -365,7 +330,9 @@ class MainActivity : AppCompatActivity(),
                     queuedPlay = queuedPlay,
                     looped = looped,
                     willBlockPlaybackUntilFinished = willBlockPlaybackUntilFinished)
+
     override fun onSensorEvent(event: SensorEvent) {
+        if (event.eventType != SensorEventType.ButtonTop) { return }
         counter++
         status_tv.text = "Event: " + event.eventType + " " + counter
 
