@@ -16,7 +16,6 @@ class App : Application(), PFICallback {
     private var playfinitySDK: PlayfinitySDK? = null
     private val pfiSDKLiveData: MutableLiveData<PlayfinitySDK?> = MutableLiveData()
 
-
     fun getPlayfinitySdkLiveData(): LiveData<PlayfinitySDK?> =
             pfiSDKLiveData
 

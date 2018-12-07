@@ -1,7 +1,5 @@
-package register.before.production
+package register.before.production.playfinity.raw
 
-import register.before.production.models.BellParameters
-import register.before.production.models.BellchimeResult
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

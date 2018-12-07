@@ -1,4 +1,4 @@
-package register.before.production.models
+package register.before.production.playfinity.raw
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
