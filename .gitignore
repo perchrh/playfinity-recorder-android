@@ -29,3 +29,4 @@ build/
 /.idea/encodings.xml
 /.idea/misc.xml
 *.apk
+compiler.xml
