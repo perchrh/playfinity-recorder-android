@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity(),
     SensorEventsSubscriber,
     PlayfinitySoundManager.PlayfinitySoundManagerListener {
 
-    private val apiServices by lazy { NetworkClient.getApi("https://testapps001.playfinity.io/") }
+    private val apiServices by lazy { NetworkClient.getApi("https://testapps.playfinity.io/") }
     private val myApiManager: BellApiManager by lazy { BellApiManager(apiServices) }
 
     private var playfinitySDK: PlayfinitySDK? = null

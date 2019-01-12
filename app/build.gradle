@@ -15,7 +15,7 @@ android {
 
         resValue "string", "PFI_APP_KEY", "DDCC1CBE711"
         resValue "string", "PFI_DEV_KEY", "DDCC81BC09A1"
-        resValue "string", "PFI_API_URL", "https://testapps001.playfinity.io/"
+        resValue "string", "PFI_API_URL", "https://testapps.playfinity.io/"
     }
     buildTypes {
         release {
