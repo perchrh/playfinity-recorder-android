@@ -96,7 +96,12 @@ class MainActivity : AppCompatActivity(),
     private val playfinitySoundManager: PlayfinitySoundManager by lazy {
         PlayfinitySoundManager.create(App.getApp(this), this)
     }
-    private val dingDongSound by lazy { createSoundSettings(R.raw.dingdong1, PlayfinitySoundVolume.high()) }
+    private val dingDongSound by lazy {
+        createSoundSettings(
+            R.raw.dingdong1,
+            PlayfinitySoundVolume.high()
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -304,23 +309,27 @@ class MainActivity : AppCompatActivity(),
     private fun requestLocationPermissions() {
         if (ActivityCompat.shouldShowRequestPermissionRationale(
                 this,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
         ) {
             Snackbar.make(
                 root,
                 "Location permission\nis required for\nble scanning",
-                Snackbar.LENGTH_LONG)
+                Snackbar.LENGTH_LONG
+            )
                 .setAction("Grant") { goToAppSettings() }
                 .show()
         } else {
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
+                arrayOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ),
                 LOCATION_PERMISSION_REQUEST
             )
         }
     }
-
 
     private fun onBleReady() {
         if (!hasLocationPermissions()) {
@@ -348,7 +357,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun isBluetoothEnabled(): Boolean {
-        val mBluetoothAdapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?)?.adapter
+        val mBluetoothAdapter =
+            (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?)?.adapter
         return mBluetoothAdapter?.isEnabled ?: false
     }
 
@@ -361,14 +371,19 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun hasPermission(permission: String): Boolean {
-        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            this,
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun createSoundSettings(@RawRes soundId: Int,
-                                    volume: PlayfinitySoundVolume,
-                                    queuedPlay: Boolean = false,
-                                    looped: Boolean = false,
-                                    willBlockPlaybackUntilFinished: Boolean = false) =
+    private fun createSoundSettings(
+        @RawRes soundId: Int,
+        volume: PlayfinitySoundVolume,
+        queuedPlay: Boolean = false,
+        looped: Boolean = false,
+        willBlockPlaybackUntilFinished: Boolean = false
+    ) =
         PlayfinitySoundSettings(
             UUID.randomUUID().toString(),
             Uri.parse("android.resource://$packageName/$soundId"),
@@ -376,7 +391,8 @@ class MainActivity : AppCompatActivity(),
             volume = volume,
             queuedPlay = queuedPlay,
             looped = looped,
-            willBlockPlaybackUntilFinished = willBlockPlaybackUntilFinished)
+            willBlockPlaybackUntilFinished = willBlockPlaybackUntilFinished
+        )
 
     companion object {
         val executors = AppExecutors()
