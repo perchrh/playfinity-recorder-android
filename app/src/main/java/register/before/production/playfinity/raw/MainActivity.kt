@@ -25,11 +25,13 @@ import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import io.playfinity.sdk.PlayfinitySDK
-import io.playfinity.sdk.bluetooth.BluetoothDataRaw
+import io.playfinity.sdk.SensorEvent
+import io.playfinity.sdk.SensorEventType
+import io.playfinity.sdk.bluetooth.BluetoothDataFlagsTrampoline
 import io.playfinity.sdk.bluetooth.PFIBluetoothManager
 import io.playfinity.sdk.callbacks.DiscoverSensorListener
 import io.playfinity.sdk.device.Sensor
-import io.playfinity.sdk.device.SensorRawDataSubscriber
+import io.playfinity.sdk.device.SensorEventsSubscriber
 import io.playfinity.sdk.errors.PlayfinityThrowable
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.sensor_raw_data_list_view.*
@@ -38,11 +40,12 @@ import java.io.FileWriter
 import java.io.IOException
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 
 
 class MainActivity : AppCompatActivity(),
         DiscoverSensorListener,
-        SensorRawDataSubscriber {
+        SensorEventsSubscriber {
 
     private var playfinitySDK: PlayfinitySDK? = null
     private val pfiBluetoothManager: PFIBluetoothManager?
@@ -50,11 +53,11 @@ class MainActivity : AppCompatActivity(),
 
     private var sensor: Sensor? = null
     private var isConnectedToSensor = false
-    private val adapter = RawDataListAdapter()
+    private val adapter = JumpDataListAdapter()
 
     private val handler = Handler()
     private val updateListTask = Runnable { updateListTaskJob() }
-    private val rawDataItems = mutableListOf<RawDataListItem>()
+    private val eventDataItems = mutableListOf<JumpDataListItem>()
 
     private var counter: Int = 0
         get() {
@@ -124,7 +127,7 @@ class MainActivity : AppCompatActivity(),
 
     override fun onPause() {
         super.onPause()
-        unregisterBallScanner()
+        unregisterConsoleScanner()
         handler.removeCallbacks(updateListTask)
     }
 
@@ -141,7 +144,7 @@ class MainActivity : AppCompatActivity(),
                 progress_bar.visibility = View.GONE
                 clearRecords()
 
-                sensor?.subscribeToRawData(this)
+                sensor?.subscribeToEvents(this)
             }
         }
     }
@@ -184,20 +187,26 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    override fun onSensorRawData(rawData: BluetoothDataRaw) {
-        if (!collectRecords) {
-            return
-        }
+    //var processedEvents =
+
+    override fun onSensorEvent(event: SensorEvent) {
+
 
         executors.workerThread().execute {
-            rawDataItems.add(RawDataListItem(counter, rawData))
+            status_tv.text = "${event.eventType}"
+
+            if (event.eventType == SensorEventType.Jump || event.eventType == SensorEventType.Land) {
+                System.out.println("Got " + event.eventType+". With attributes: " + event.attributes)
+                eventDataItems.add(JumpDataListItem(event.identifier, event))
+            }
         }
+
     }
 
     private fun updateListTaskJob(postNext: Boolean = true) {
-        adapter.submit(rawDataItems)
+        adapter.submit(eventDataItems)
         (raw_data_list.layoutManager as LinearLayoutManager).scrollToPosition(adapter.itemCount - 1)
-        rawDataItems.clear()
+        eventDataItems.clear()
 
         if (postNext) {
             handler.postDelayed(updateListTask, updateListInterval)
@@ -221,11 +230,11 @@ class MainActivity : AppCompatActivity(),
             list_header_group.visibility = View.GONE
 
             if (isConnectedToSensor) {
-                status_tv.text = "Subscribed to Raw data"
-                foundSensor.subscribeToRawData(this)
+                status_tv.text = "Subscribed to jump data"
+                foundSensor.subscribeToEvents(this)
             } else {
-                status_tv.text = "Unsubscribed Raw data"
-                foundSensor.unSubscribeRawData(this)
+                status_tv.text = "Unsubscribed jump data"
+                foundSensor.unSubscribeEvents(this)
                 updateListTaskJob(false)
             }
         }
@@ -237,17 +246,15 @@ class MainActivity : AppCompatActivity(),
 
         handler.postDelayed(updateListTask, updateListInterval)
 
-        val header = RawDataListItem(0)
-        ax.text = header.ax
-        ay.text = header.ay
-        az.text = header.az
+        val header = JumpDataListItem(0)
+        actionCount.text = "#"
+        yaw.text = header.yaw
+        pitch.text = header.pitch
 
-        gx.text = header.gx
-        gy.text = header.gy
-        gz.text = header.gz
-
-        baro.text = header.baro
-        time.text = header.sensortime
+        heightLbl.text = header.height
+        airtime.text = header.airtime
+        jumpOrientation.text = "Jump"
+        landOrientation.text = "Land"
 
         record_btn.setOnClickListener {
             record_btn.text = "Clear"
@@ -272,12 +279,12 @@ class MainActivity : AppCompatActivity(),
 
     private fun generateLogFile() {
         try {
-            val rawDataItems = adapter.getItems()
-            val header = RawDataListItem(0)
+            val jumpDataItems = adapter.getItems()
+            val header = JumpDataListItem(0)
 
-            val records = mutableListOf<RawDataListItem>()
+            val records = mutableListOf<JumpDataListItem>()
             records.add(header)
-            records.addAll(rawDataItems)
+            records.addAll(jumpDataItems)
             val logBuilder = createLogBuilder(records)
             val filecontents = logBuilder.toString().replace(".", ",")
 
@@ -302,26 +309,22 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun createLogBuilder(records: List<RawDataListItem>): StringBuilder {
+    private fun createLogBuilder(records: List<JumpDataListItem>): StringBuilder {
         val logBuilder = StringBuilder()
 
         records.forEach {
             logBuilder
-                    .append(it.ax)
+                    .append(it.actionCount)
                     .append(';')
-                    .append(it.ay)
+                    .append(it.yaw)
                     .append(';')
-                    .append(it.az)
+                    .append(it.pitch)
                     .append(';')
-                    .append(it.gx)
+                    .append(it.height)
                     .append(';')
-                    .append(it.gy)
+                    .append(it.airtime)
                     .append(';')
-                    .append(it.gz)
-                    .append(';')
-                    .append(it.baro)
-                    .append(';')
-                    .append(it.sensortime)
+                    .append(it.orientations)
                     .append(';')
                     .append('\n')
         }
@@ -344,7 +347,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun clearRecords() {
         handler.removeCallbacks(updateListTask)
-        rawDataItems.clear()
+        eventDataItems.clear()
         adapter.clear()
         counter = 0
 
@@ -364,10 +367,10 @@ class MainActivity : AppCompatActivity(),
     }
 
     /**
-     * Stops ball discover event
+     * Stops console discover event
      */
-    private fun unregisterBallScanner() {
-        sensor?.unSubscribeRawData(this)
+    private fun unregisterConsoleScanner() {
+        sensor?.unSubscribeEvents(this)
         pfiBluetoothManager?.run {
             removeSensorDiscoverListener(this@MainActivity)
             stopScanner()
@@ -411,7 +414,7 @@ class MainActivity : AppCompatActivity(),
     private fun onBluetoothNotEnabled() {
         AlertDialog.Builder(this)
                 .setTitle("Warning")
-                .setMessage("You must turn on\nBluetooth to\nDiscover the\nball.")
+                .setMessage("You must turn on\nBluetooth to\nDiscover the\nconsole.")
                 .setPositiveButton("Got it") { _, _ ->
                     val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
                     registerReceiver(bleStateReceiver, filter)
@@ -448,7 +451,7 @@ class MainActivity : AppCompatActivity(),
 
         executors.workerThread().execute {
             pfiBluetoothManager?.run {
-                status_tv.text = "Looking for Sensors nearby"
+                status_tv.text = "Looking for Consoles nearby"
                 addSensorDiscoverListener(this@MainActivity)
                 startScanner(false)
             }

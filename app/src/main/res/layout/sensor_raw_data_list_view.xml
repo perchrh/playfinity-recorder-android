@@ -8,107 +8,94 @@
     android:padding="12dp">
 
     <TextView
-        android:id="@+id/ax"
+        android:id="@+id/actionCount"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/design_default_color_primary"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/ay"
+        app:layout_constraintEnd_toStartOf="@+id/yaw"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         tools:gravity="center"
         tools:text="-2.0" />
 
     <TextView
-        android:id="@+id/ay"
+        android:id="@+id/yaw"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/colorAccent"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/az"
+        app:layout_constraintEnd_toStartOf="@+id/pitch"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/ax"
+        app:layout_constraintStart_toEndOf="@+id/actionCount"
         tools:text="-2.0" />
 
     <TextView
-        android:id="@+id/az"
+        android:id="@+id/pitch"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/colorPrimaryDark"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/gx"
+        app:layout_constraintEnd_toStartOf="@+id/heightLbl"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/ay"
+        app:layout_constraintStart_toEndOf="@+id/yaw"
         tools:text="-2.0" />
 
     <TextView
-        android:id="@+id/gx"
+        android:id="@+id/heightLbl"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/design_default_color_primary"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/gy"
+        app:layout_constraintEnd_toStartOf="@+id/airtime"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/az"
+        app:layout_constraintStart_toEndOf="@+id/pitch"
         tools:gravity="center"
         tools:text="-2000" />
 
     <TextView
-        android:id="@+id/gy"
+        android:id="@+id/airtime"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/colorAccent"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/gz"
+        app:layout_constraintEnd_toStartOf="@+id/jumpOrientation"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/gx"
+        app:layout_constraintStart_toEndOf="@+id/heightLbl"
         tools:text="-2000" />
 
     <TextView
-        android:id="@+id/gz"
+        android:id="@+id/jumpOrientation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/colorPrimaryDark"
         app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@+id/baro"
+        app:layout_constraintEnd_toStartOf="@+id/landOrientation"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/gy"
+        app:layout_constraintStart_toEndOf="@+id/airtime"
         tools:gravity="center"
         tools:text="-2000" />
 
     <TextView
-        android:id="@+id/baro"
+        android:id="@+id/landOrientation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
         android:textColor="@color/design_default_color_primary"
-        app:fontFamily="monospace"
-        app:layout_constraintEnd_toStartOf="@id/time"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@id/gz"
-        tools:gravity="center"
-        tools:text="-2000" />
-
-    <TextView
-        android:id="@+id/time"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2"
-        android:textColor="@color/colorAccent"
         app:fontFamily="monospace"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@id/baro"
         tools:gravity="center"
+        tools:layout_editor_absoluteY="0dp"
         tools:text="-2000" />
 
 </android.support.constraint.ConstraintLayout>

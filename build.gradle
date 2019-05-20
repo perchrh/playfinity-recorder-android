@@ -9,6 +9,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.2.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath files('libs/playfinity-0.0.9.jar')
     }
 }
 
