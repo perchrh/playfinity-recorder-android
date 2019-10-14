@@ -40,7 +40,7 @@ class App : Application(), PFICallback {
         PlayfinitySDKBuilder()
                 .enableLogging(BuildConfig.DEBUG)
                 .addCallback(this)
-                .build(this, SensorType.Ball)
+                .build(this, SensorType.Football)
     }
 
     companion object {

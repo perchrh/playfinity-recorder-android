@@ -23,13 +23,14 @@ import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.view.View
 import io.playfinity.sdk.PlayfinitySDK
+import io.playfinity.sdk.SensorEvent
 import io.playfinity.sdk.bluetooth.BluetoothDataRaw
 import io.playfinity.sdk.bluetooth.PFIBluetoothManager
 import io.playfinity.sdk.callbacks.DiscoverSensorListener
-import io.playfinity.sdk.device.Sensor
-import io.playfinity.sdk.device.SensorRawDataSubscriber
+import io.playfinity.sdk.device.*
 import io.playfinity.sdk.errors.PlayfinityThrowable
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.sensor_raw_data_list_view.*
@@ -42,7 +43,15 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(),
         DiscoverSensorListener,
-        SensorRawDataSubscriber {
+        SensorRawDataSubscriber, SensorEventsSubscriber, SensorTypeUpdateListener {
+
+    override fun onSensorTypeUpdated(sensor: Sensor) {
+        Log.d("fotball", "Sensortype ble satt til ${sensor.sensorType}")
+    }
+
+    override fun onSensorEvent(event: SensorEvent) {
+        Log.d("fotball", event.eventType.toString())
+    }
 
     private var playfinitySDK: PlayfinitySDK? = null
     private val pfiBluetoothManager: PFIBluetoothManager?
@@ -141,7 +150,9 @@ class MainActivity : AppCompatActivity(),
                 progress_bar.visibility = View.GONE
                 clearRecords()
 
-                sensor?.subscribeToRawData(this)
+                //sensor?.subscribeToRawData(this)
+
+                sensor?.subscribeToEvents(this)
             }
         }
     }
@@ -222,10 +233,14 @@ class MainActivity : AppCompatActivity(),
 
             if (isConnectedToSensor) {
                 status_tv.text = "Subscribed to Raw data"
-                foundSensor.subscribeToRawData(this)
+                //foundSensor.subscribeToRawData(this)
+                foundSensor.subscribeToEvents(this)
+                Log.d("fotball", "Sensortype var ${foundSensor.sensorType}")
+                foundSensor.setNewType(SensorType.Football, this)
             } else {
                 status_tv.text = "Unsubscribed Raw data"
                 foundSensor.unSubscribeRawData(this)
+                foundSensor.unSubscribeEvents(this)
                 updateListTaskJob(false)
             }
         }
@@ -368,6 +383,7 @@ class MainActivity : AppCompatActivity(),
      */
     private fun unregisterBallScanner() {
         sensor?.unSubscribeRawData(this)
+        sensor?.unSubscribeEvents(this)
         pfiBluetoothManager?.run {
             removeSensorDiscoverListener(this@MainActivity)
             stopScanner()
@@ -477,6 +493,8 @@ class MainActivity : AppCompatActivity(),
     private fun hasPermission(permission: String): Boolean {
         return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
     }
+
+
 
     companion object {
         val executors = AppExecutors()
